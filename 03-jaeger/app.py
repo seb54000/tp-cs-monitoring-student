@@ -15,6 +15,7 @@ from flask import Response
 
 # Définition des ressources OpenTelemetry
 resource = Resource.create({"service.name": "slow-api"})
+# TODO use env var for config
 
 # ✅ Définition du TracerProvider AVANT l'instrumentation
 provider = TracerProvider(resource=resource)
@@ -22,6 +23,7 @@ trace.set_tracer_provider(provider)
 
 # ✅ Ajout de l'exporteur OTLP pour envoyer les traces à Jaeger
 otlp_exporter = OTLPSpanExporter(endpoint="http://jaeger:4317", insecure=True)
+# TODO use env var for config
 provider.add_span_processor(BatchSpanProcessor(otlp_exporter))
 
 # ✅ Instrumentation Flask et Requests (APRES avoir défini le TracerProvider)
@@ -79,7 +81,7 @@ def slow_response():
     with tracer.start_as_current_span("step_3"):
         step_3()
 
-    return {"message": "Réponse après un traitement long"}, 200
+    return {"message": "long answer"}, 200
 
 
 
