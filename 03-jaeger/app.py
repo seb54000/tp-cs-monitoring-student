@@ -8,8 +8,12 @@ from opentelemetry.instrumentation.requests import RequestsInstrumentor
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.jaeger.thrift import JaegerExporter
+# from opentelemetry.exporter.jaeger.thrift import JaegerExporter
+from opentelemetry.sdk.resources import Resource
 from prometheus_client import start_http_server
+import os
+
+
 
 # Initialisation de Flask
 app = Flask(__name__)
@@ -19,19 +23,37 @@ FlaskInstrumentor().instrument_app(app)
 RequestsInstrumentor().instrument()
 
 # Configuration du Tracer
-trace.set_tracer_provider(TracerProvider())
+provider = trace.get_tracer_provider()
+if isinstance(provider, TracerProvider):  # Vérifie qu'un provider existe
+    provider.resource = Resource.create({"service.name": service_name})
 tracer = trace.get_tracer(__name__)
 
-jaeger_exporter = JaegerExporter(
-    agent_host_name="jaeger",
-    agent_port=6831,
-)
+# TODO
+# jaeger_host = os.getenv("OTEL_EXPORTER_JAEGER_AGENT_HOST", "localhost")
+# jaeger_port = int(os.getenv("OTEL_EXPORTER_JAEGER_AGENT_PORT", "6831"))
 
+# jaeger_exporter = JaegerExporter(
+#     agent_host_name=jaeger_host,
+#     agent_port=jaeger_port,
+# )
+
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+
+otlp_exporter = OTLPSpanExporter(endpoint="http://jaeger:4317", insecure=True)
+trace.get_tracer_provider().add_span_processor(BatchSpanProcessor(otlp_exporter))
+
+
+service_name = os.getenv("OTEL_RESOURCE_ATTRIBUTES", "slow-api").split("=")[-1]
+trace.set_tracer_provider(TracerProvider(resource=Resource.create({"service.name": service_name})))
 trace.get_tracer_provider().add_span_processor(BatchSpanProcessor(jaeger_exporter))
+tracer = trace.get_tracer(__name__)
+
 
 # Configuration des métriques
 reader = PrometheusMetricReader()
 metrics.set_meter_provider(MeterProvider(metric_readers=[reader]))
+
 meter = metrics.get_meter(__name__)
 
 latency_metric = meter.create_histogram(
