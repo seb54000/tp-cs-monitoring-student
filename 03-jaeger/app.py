@@ -2,58 +2,40 @@ from flask import Flask, request
 import random
 import time
 from opentelemetry import trace, metrics
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.exporter.prometheus import PrometheusMetricReader
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
-from opentelemetry.sdk.metrics import MeterProvider
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-# from opentelemetry.exporter.jaeger.thrift import JaegerExporter
-from opentelemetry.sdk.resources import Resource
-from prometheus_client import start_http_server
-import os
+from prometheus_client import start_http_server, generate_latest
+from flask import Response
 
+# Définition des ressources OpenTelemetry
+resource = Resource.create({"service.name": "slow-api"})
 
+# ✅ Définition du TracerProvider AVANT l'instrumentation
+provider = TracerProvider(resource=resource)
+trace.set_tracer_provider(provider)
 
-# Initialisation de Flask
+# ✅ Ajout de l'exporteur OTLP pour envoyer les traces à Jaeger
+otlp_exporter = OTLPSpanExporter(endpoint="http://jaeger:4317", insecure=True)
+provider.add_span_processor(BatchSpanProcessor(otlp_exporter))
+
+# ✅ Instrumentation Flask et Requests (APRES avoir défini le TracerProvider)
 app = Flask(__name__)
-
-# Instrumentation OpenTelemetry
 FlaskInstrumentor().instrument_app(app)
 RequestsInstrumentor().instrument()
 
-# Configuration du Tracer
-provider = trace.get_tracer_provider()
-if isinstance(provider, TracerProvider):  # Vérifie qu'un provider existe
-    provider.resource = Resource.create({"service.name": service_name})
+# Création du Tracer
 tracer = trace.get_tracer(__name__)
 
-# TODO
-# jaeger_host = os.getenv("OTEL_EXPORTER_JAEGER_AGENT_HOST", "localhost")
-# jaeger_port = int(os.getenv("OTEL_EXPORTER_JAEGER_AGENT_PORT", "6831"))
-
-# jaeger_exporter = JaegerExporter(
-#     agent_host_name=jaeger_host,
-#     agent_port=jaeger_port,
-# )
-
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-
-otlp_exporter = OTLPSpanExporter(endpoint="http://jaeger:4317", insecure=True)
-trace.get_tracer_provider().add_span_processor(BatchSpanProcessor(otlp_exporter))
-
-
-service_name = os.getenv("OTEL_RESOURCE_ATTRIBUTES", "slow-api").split("=")[-1]
-trace.set_tracer_provider(TracerProvider(resource=Resource.create({"service.name": service_name})))
-trace.get_tracer_provider().add_span_processor(BatchSpanProcessor(jaeger_exporter))
-tracer = trace.get_tracer(__name__)
-
-
-# Configuration des métriques
+# Définition du MetricReader et enregistrement dans OpenTelemetry
 reader = PrometheusMetricReader()
-metrics.set_meter_provider(MeterProvider(metric_readers=[reader]))
-
+meter_provider = MeterProvider(metric_readers=[reader])
+metrics.set_meter_provider(meter_provider)
 meter = metrics.get_meter(__name__)
 
 latency_metric = meter.create_histogram(
@@ -64,13 +46,15 @@ latency_metric = meter.create_histogram(
 @app.route("/slow")
 def slow_request():
     with tracer.start_as_current_span("slow_request_span"):
-        delay = random.choice([0.1, 0.2, 0.5, 2, 3, 4])  # Simulation de latence aléatoire
+        delay = random.choice([0.1, 0.2, 0.5, 2, 3, 4])
         time.sleep(delay)
-        
-        # Enregistrement des métriques
         latency_metric.record(delay, {"endpoint": "/slow"})
-        
-        return {"message": "Réponse après un délai"}, 200
+        return {"message": "delay {}".format(delay)}, 200
+
+
+@app.route("/metrics")
+def metrics_endpoint():
+    return Response(generate_latest(), mimetype="text/plain")
 
 if __name__ == "__main__":
     start_http_server(8000)  # Serveur Prometheus

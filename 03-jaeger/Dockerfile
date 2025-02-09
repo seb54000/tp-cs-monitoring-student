@@ -3,5 +3,5 @@ WORKDIR /app
 COPY app.py .
 RUN pip install requests flask opentelemetry-sdk opentelemetry-instrumentation-flask \
 opentelemetry-exporter-prometheus opentelemetry-exporter-jaeger \
-opentelemetry-instrumentation-requests prometheus_client
+opentelemetry-instrumentation-requests opentelemetry-exporter-otlp prometheus_client
 CMD ["python", "app.py"]

@@ -30,5 +30,6 @@ services:
   jaeger:
     image: jaegertracing/all-in-one:latest
     ports:
-      - "16686:16686"
-      - "6831:6831/udp"
+      - "16686:16686" # UI Web
+      # - "6831:6831/udp"
+      - "4317:4317"    # OTLP (nouveau protocole)
