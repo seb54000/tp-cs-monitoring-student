@@ -1,0 +1,21 @@
+# config file version
+apiVersion: 1
+# list of datasources that should be deleted from the database (if already existing)
+deleteDatasources:
+  - name: Prometheus
+    orgId: 1
+datasources:
+- name: Prometheus
+  type: prometheus
+  access: proxy
+  orgId: 1
+  url: http://localhost:9090
+  isDefault: true
+  version: 1
+  editable: true
+# - name: Jaeger
+#   type: jaeger
+#   access: proxy
+#   url: http://localhost:16686
+#   isDefault: false
+#   editable: true
