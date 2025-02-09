@@ -56,6 +56,33 @@ def slow_request():
 def metrics_endpoint():
     return Response(generate_latest(), mimetype="text/plain")
 
+def step_1():
+    """ Étape rapide (100-200ms) """
+    time.sleep(random.uniform(0.1, 0.2))
+
+def step_2():
+    """ Étape avec un délai variable (200-1500ms) """
+    time.sleep(random.uniform(0.2, 1.5))
+
+def step_3():
+    """ Autre étape rapide (100-200ms) """
+    time.sleep(random.uniform(0.1, 0.2))
+
+@app.route("/slowing")
+def slow_response():
+    with tracer.start_as_current_span("step_1"):
+        step_1()
+    
+    with tracer.start_as_current_span("step_2 (variable delay)"):
+        step_2()
+
+    with tracer.start_as_current_span("step_3"):
+        step_3()
+
+    return {"message": "Réponse après un traitement long"}, 200
+
+
+
 if __name__ == "__main__":
     start_http_server(8000)  # Serveur Prometheus
     app.run(host="0.0.0.0", port=5000)
