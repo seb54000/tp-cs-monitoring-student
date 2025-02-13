@@ -8,6 +8,8 @@ services:
   api:
     network_mode: host
     build: .
+    volumes:
+      - logs-data:/app/logs
     # ports:
     #   - "5000:5000"
     #   - "8000:8000"
@@ -16,6 +18,20 @@ services:
     #   - OTEL_EXPORTER_JAEGER_AGENT_HOST=jaeger
     #   - OTEL_EXPORTER_JAEGER_AGENT_PORT=6831
     #   - OTEL_METRICS_EXPORTER=prometheus
+
+  fluentbit:
+    # image: cr.fluentbit.io/fluent/fluent-bit:2.2.0
+    image: fluent/fluent-bit
+    container_name: fluentbit
+    network_mode: host
+    volumes:
+      - logs-data:/logs
+      - ./fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf
+      - ./fluent-bit.parsers.conf:/fluent-bit/etc/fluent-bit.parsers.conf
+    depends_on:
+      - opensearch
+    command: ["/fluent-bit/bin/fluent-bit", "-c", "/fluent-bit/etc/fluent-bit.conf"]
+
 
   # prometheus:
   #   image: prom/prometheus
@@ -55,6 +71,7 @@ services:
       - discovery.type=single-node
       - bootstrap.memory_lock=true
       - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
+      # - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD}
     ulimits:
       memlock:
         soft: -1
@@ -71,6 +88,8 @@ services:
     # ports:
     #   - 5601:5601
     environment:
-      - OPENSEARCH_HOSTS=["http://localhost:9200"]
+      - OPENSEARCH_HOSTS=["https://localhost:9200"]
+
 volumes:
   opensearch-data:
+  logs-data:

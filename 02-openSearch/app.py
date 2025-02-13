@@ -5,6 +5,9 @@ from pythonjsonlogger import jsonlogger
 app = Flask(__name__)
 
 # Configuration du logger JSON
+logfile = "/app/logs/app.log"
+logging.basicConfig(filename=logfile, level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
 logger = logging.getLogger()
 logHandler = logging.StreamHandler()
 formatter = jsonlogger.JsonFormatter('%(asctime)s %(levelname)s %(message)s %(pathname)s %(funcName)s %(lineno)d')

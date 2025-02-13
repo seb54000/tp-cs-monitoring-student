@@ -2,8 +2,7 @@ import requests
 import time
 import random
 
-URLS = ["http://localhost:5000/slow", "http://localhost:5000/slowing"]
-# URLS = ["http://localhost:8000/slow", "http://flask-app/slow", "http://flask-app/error"]
+URLS = ["http://localhost:5000/status"]
 
 while True:
     url = random.choice(URLS)
