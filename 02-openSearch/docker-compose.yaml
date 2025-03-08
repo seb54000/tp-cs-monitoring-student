@@ -90,6 +90,58 @@ services:
     environment:
       - OPENSEARCH_HOSTS=["https://localhost:9200"]
 
+  # https://stackoverflow.com/questions/76168744/opensearch-dashboards-kibana-start-docker-container-with-index-pattern-pre-c
+  init:
+    image: curlimages/curl
+    container_name: init
+    network_mode: host
+    entrypoint:
+      - /bin/sh
+      - '-c'
+      - |
+          URL=http://admin:admin@localhost:5601
+          status_code=$$(curl --write-out %{http_code} --silent --output /dev/null $$URL/app/home)
+          echo $$status_code
+          sleep 2
+          while [ $$status_code -ne 200 ]
+          do
+            status_code=$$(curl --write-out %{http_code} --silent --output /dev/null $$URL/app/home)
+            echo $$status_code
+            sleep 2
+          done
+          cat > /tmp/indexpattern.json << HERE
+          {
+            "attributes": {
+              "title": "*",
+              "timeFieldName": "@timestamp"
+            }
+          }
+          HERE
+          curl --silent -H "osd-xsrf: true" \
+            -H "Content-Type: application/json" \
+            -H "securitytenant: Global" \
+            -d "@/tmp/indexpattern.json" \
+            "$$URL/api/saved_objects/index-pattern/*"
+          echo 'index pattern imported'
+          cat > /tmp/indexpattern.json << HERE
+          {
+            "attributes": {
+              "title": "logs-flask*"
+            }
+          }
+          HERE
+          curl --silent -H "osd-xsrf: true" \
+            -H "Content-Type: application/json" \
+            -H "securitytenant: Global" \
+            -d "@/tmp/indexpattern.json" \
+            "$$URL/api/saved_objects/index-pattern/logs-flask*"
+          echo 'index pattern imported'   
+          curl -s -k -u admin:admin -X POST "https://127.0.0.1:9200/logs-flask/_doc" -H "Content-Type: application/json" -d '{"message":"test log"}'
+          echo 'test log message in index logs-flask created'
+    depends_on:
+    - opensearch
+    - opensearch-dashboards
+
 volumes:
   opensearch-data:
   logs-data:
