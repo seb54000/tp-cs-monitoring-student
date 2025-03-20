@@ -12,4 +12,6 @@ while True:
     except Exception as e:
         print(f"Erreur lors de l'appel {url}: {e}")
 
-    time.sleep(random.uniform(0.5, 2))
+    time.sleep(random.uniform(0.5, 0.6))
+
+
