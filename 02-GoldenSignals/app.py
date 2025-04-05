@@ -10,6 +10,7 @@ REQUEST_COUNT = Counter('http_requests_total', 'Total des requêtes', ['endpoint
 LATENCY = Histogram('http_request_duration_seconds', 'Durée des requêtes', ['endpoint'])
 ERROR_RATE = Counter('http_errors_total', 'Total des erreurs HTTP', ['endpoint'])
 CPU_USAGE = Gauge('cpu_usage', 'Utilisation du CPU (%)')
+DB_CNX = Gauge('database_connexions', 'Nbre de connexions simultanées')
 
 @app.route('/fast')
 def fast():
@@ -25,14 +26,6 @@ def slow():
     REQUEST_COUNT.labels(endpoint='/slow', status='200').inc()
     LATENCY.labels(endpoint='/slow').observe(time.time() - start_time)
     return jsonify({'message': 'Réponse lente'})
-
-@app.route('/standard')
-def standard():
-    start_time = time.time()
-    time.sleep(random.uniform(0.9, 1.1))  # Simulation de latence
-    REQUEST_COUNT.labels(endpoint='/standard', status='200').inc()
-    LATENCY.labels(endpoint='/standard').observe(time.time() - start_time)
-    return jsonify({'message': 'Réponse standard'})
 
 @app.route('/error')
 def error():
@@ -50,6 +43,7 @@ def errorfast():
 @app.route('/metrics')
 def metrics():
     CPU_USAGE.set(random.uniform(10, 90))  # Simulation d'utilisation CPU
+    DB_CNX.set(random.uniform(20, 50))  # Simulation de nbre de connexions utilisées
     return generate_latest()
 
 if __name__ == '__main__':

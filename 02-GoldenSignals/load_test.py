@@ -2,7 +2,7 @@ import requests
 import time
 import random
 
-URLS = ["http://localhost:5000/standard", "http://localhost:5000/errorfast"]
+URLS = ["http://localhost:5000/fast", "http://localhost:5000/slow", "http://localhost:5000/errorfast"]
 
 while True:
     url = random.choice(URLS)
