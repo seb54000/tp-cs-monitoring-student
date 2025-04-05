@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, Response, jsonify
 import time
 import random
 from prometheus_client import Counter, Histogram, Gauge, generate_latest
@@ -11,6 +11,8 @@ LATENCY = Histogram('http_request_duration_seconds', 'Durée des requêtes', ['e
 ERROR_RATE = Counter('http_errors_total', 'Total des erreurs HTTP', ['endpoint'])
 CPU_USAGE = Gauge('cpu_usage', 'Utilisation du CPU (%)')
 DB_CNX = Gauge('database_connexions', 'Nbre de connexions simultanées')
+
+CONTENT_TYPE_LATEST = str('text/plain; version=0.0.4; charset=utf-8')
 
 @app.route('/fast')
 def fast():
@@ -37,14 +39,14 @@ def error():
 def errorfast():
     REQUEST_COUNT.labels(endpoint='/errorfast', status='500').inc()
     ERROR_RATE.labels(endpoint='/errorfast').inc()
-    LATENCY.labels(endpoint='/errorfast').observe(0.01)
+    LATENCY.labels(endpoint='/errorfast').observe(random.uniform(0.01, 0.2)) # between 10ms and 200ms
     return jsonify({'message': 'Erreur simulée fast'}), 500
 
 @app.route('/metrics')
 def metrics():
     CPU_USAGE.set(random.uniform(10, 90))  # Simulation d'utilisation CPU
     DB_CNX.set(random.uniform(20, 50))  # Simulation de nbre de connexions utilisées
-    return generate_latest()
+    return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
