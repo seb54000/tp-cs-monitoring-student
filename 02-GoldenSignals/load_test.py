@@ -13,9 +13,11 @@ parser.add_argument("--secondary-percent", type=float, default=0.0,
                     help="Pourcentage d'utilisation des URLs secondaires (0 à 100)")
 args = parser.parse_args()
 
-main_urls = ["http://localhost:5000/fast", "http://localhost:5000/errorfast"]
+main_urls = ["http://localhost:5000/fast", "http://localhost:5000/standard", "http://localhost:5000/errorfast"]
 secondary_urls = ["http://localhost:5000/slow"]
 secondary_percent = args.secondary_percent
+
+# scenario 2, should remove errorfast (we have corrected the bug, but now we have more standard request, fast are only a fraction)
 
 
 while True:

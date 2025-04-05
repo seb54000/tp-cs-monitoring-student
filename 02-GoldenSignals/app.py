@@ -29,17 +29,18 @@ def slow():
     LATENCY.labels(endpoint='/slow').observe(time.time() - start_time)
     return jsonify({'message': 'Réponse lente'})
 
-@app.route('/error')
-def error():
-    REQUEST_COUNT.labels(endpoint='/error', status='500').inc()
-    ERROR_RATE.labels(endpoint='/error').inc()
-    return jsonify({'message': 'Erreur simulée'}), 500
+@app.route('/standard')
+def standard():
+    REQUEST_COUNT.labels(endpoint='/standard', status='200').inc()
+    ERROR_RATE.labels(endpoint='/standard').inc()
+    LATENCY.labels(endpoint='/standard').observe(random.uniform(0.15, 0.25)) # between 10ms and 200ms
+    return jsonify({'message': 'Réponse standard'}), 200
 
 @app.route('/errorfast')
 def errorfast():
     REQUEST_COUNT.labels(endpoint='/errorfast', status='500').inc()
     ERROR_RATE.labels(endpoint='/errorfast').inc()
-    LATENCY.labels(endpoint='/errorfast').observe(random.uniform(0.01, 0.2)) # between 10ms and 200ms
+    LATENCY.labels(endpoint='/errorfast').observe(random.uniform(0.001, 0.02)) # between 10ms and 200ms
     return jsonify({'message': 'Erreur simulée fast'}), 500
 
 @app.route('/metrics')
