@@ -1,11 +1,34 @@
 
-from flask import Flask, Response, jsonify
+from flask import Flask, request, Response, jsonify
 import time
 import random, logging
-from prometheus_client import Counter, Histogram, Gauge, generate_latest
+from prometheus_client import start_http_server, Counter, Histogram, Gauge, generate_latest
 from pythonjsonlogger import jsonlogger
+from opentelemetry import trace, metrics
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.exporter.prometheus import PrometheusMetricReader
+from opentelemetry.instrumentation.flask import FlaskInstrumentor
+from opentelemetry.instrumentation.requests import RequestsInstrumentor
 
+# Définition des ressources OpenTelemetry
+resource = Resource.create({"service.name": "slow-api"})
+# Définition du TracerProvider AVANT l'instrumentation
+provider = TracerProvider(resource=resource)
+trace.set_tracer_provider(provider)
+# Ajout de l'exporteur OTLP pour envoyer les traces à Jaeger
+otlp_exporter = OTLPSpanExporter(endpoint="http://jaeger:4317", insecure=True)
+provider.add_span_processor(BatchSpanProcessor(otlp_exporter))
+
+# Instrumentation Flask et Requests (APRES avoir défini le TracerProvider)
 app = Flask(__name__)
+FlaskInstrumentor().instrument_app(app)
+RequestsInstrumentor().instrument()
+# Création du Tracer
+tracer = trace.get_tracer(__name__)
 
 # Définition des métriques Prometheus
 REQUEST_COUNT = Counter('http_requests_total', 'Total des requêtes', ['endpoint', 'status'])
@@ -90,6 +113,33 @@ def highdb():
     DB_CNX.set(random.uniform(45, 65))  # Simulation de nbre de connexions utilisées
     logger.error(f"Request failed / slow - Max connection reached in daabase connexion pool")
     return jsonify({'message': 'Utilisation haute DB'}), 500
+
+
+def step_1():
+    """ Étape rapide (100-200ms) """
+    time.sleep(random.uniform(0.1, 0.2))
+
+def step_2():
+    """ Étape avec un délai variable (200-1500ms) """
+    time.sleep(random.uniform(0.2, 1.5))
+
+def step_3():
+    """ Autre étape rapide (100-200ms) """
+    time.sleep(random.uniform(0.1, 0.2))
+
+@app.route("/microservices")
+def slow_response():
+    with tracer.start_as_current_span("step_1"):
+        step_1()
+
+    with tracer.start_as_current_span("step_2 (variable delay)"):
+        step_2()
+
+    with tracer.start_as_current_span("step_3"):
+        step_3()
+
+    return {"message": "long answer"}, 200
+
 
 @app.route('/metrics')
 def metrics():

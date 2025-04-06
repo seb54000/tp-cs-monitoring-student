@@ -29,6 +29,12 @@ def get_scenario_config(scenario_id):
             "secondary_urls": ["http://localhost:5000/slow", "http://localhost:5000/fast", "http://localhost:5000/errorfast"],
             "secondary_percent": 5
         }
+    elif scenario_id == "5":
+        return {
+            "main_urls": ["http://localhost:5000/microservices","http://localhost:5000/standard"],
+            "secondary_urls": ["http://localhost:5000/slow", "http://localhost:5000/fast", "http://localhost:5000/errorfast"],
+            "secondary_percent": 5
+        }
     else:
         raise ValueError(f"Scénario inconnu: {scenario_id}")
 
