@@ -7,4 +7,4 @@ route:
 receivers:
   - name: file-logger
     webhook_configs:
-      - url: 'http://alert-webhook:5001/webhook'
+      - url: 'http://localhost:5001/webhook'

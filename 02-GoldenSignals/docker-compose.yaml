@@ -39,16 +39,14 @@ services:
     image: prom/alertmanager
     volumes:
       - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml
-    ports:
-      - "9093:9093"
+    # ports:
+    #   - "9093:9093"
     command:
       - '--config.file=/etc/alertmanager/alertmanager.yml'
-    networks:
-      - monitoring
+    network_mode: host
 
   alert-webhook:
     build: ./webhook
-    ports:
-      - "5001:5001"
-    networks:
-      - monitoring
+    # ports:
+    #   - "5001:5001"
+    network_mode: host
