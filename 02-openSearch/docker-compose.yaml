@@ -1,8 +1,9 @@
-version: "3"
 
-# volumes:
+volumes:
 #   prometheus-data:
-#   grafana-data:
+  grafana-data:
+  opensearch-data:
+  logs-data:
 
 services:
   api:
@@ -32,27 +33,32 @@ services:
       - opensearch
     command: ["/fluent-bit/bin/fluent-bit", "-c", "/fluent-bit/etc/fluent-bit.conf"]
 
+  prometheus:
+    image: prom/prometheus:v3.1.0
+    network_mode: host
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./alert_rules.yml:/etc/prometheus/alert_rules.yml
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.size=1GB"
+    # ports:
+    #   - "9090:9090"
 
-  # prometheus:
-  #   image: prom/prometheus
-  #   network_mode: host
-  #   volumes:
-  #     - ./prometheus.yml:/etc/prometheus/prometheus.yml
-  #   # ports:
-  #   #   - "9090:9090"
+  grafana:
+    image: grafana/grafana
+    network_mode: host
+    # ports:
+    #   - "3000:3000"
+    depends_on:
+      - prometheus
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=grafana
+      - GF_INSTALL_PLUGINS=grafana-opensearch-datasource
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana-provisioning:/etc/grafana/provisioning
 
-  # grafana:
-  #   image: grafana/grafana
-  #   network_mode: host
-  #   # ports:
-  #   #   - "3000:3000"
-  #   depends_on:
-  #     - prometheus
-  #   environment:
-  #     - GF_SECURITY_ADMIN_PASSWORD=grafana
-  #   volumes:
-  #     - grafana-data:/var/lib/grafana
-  #     - ./grafana-provisioning:/etc/grafana/provisioning      
 
   # jaeger:
   #   image: jaegertracing/all-in-one:latest
@@ -135,13 +141,9 @@ services:
             -H "securitytenant: Global" \
             -d "@/tmp/indexpattern.json" \
             "$$URL/api/saved_objects/index-pattern/logs-flask*"
-          echo 'index pattern imported'   
+          echo 'index pattern imported'
           curl -s -k -u admin:admin -X POST "https://127.0.0.1:9200/logs-flask/_doc" -H "Content-Type: application/json" -d '{"message":"test log"}'
           echo 'test log message in index logs-flask created'
     depends_on:
     - opensearch
     - opensearch-dashboards
-
-volumes:
-  opensearch-data:
-  logs-data:

@@ -13,6 +13,21 @@ datasources:
   isDefault: true
   version: 1
   editable: true
+
+- name: OpenSearch
+  type: grafana-opensearch-datasource
+  access: proxy
+  url: https://localhost:9200
+  basicAuth: true
+  basicAuthUser: admin
+  secureJsonData:
+    basicAuthPassword: admin
+  jsonData:
+    timeField: "@timestamp"
+    flavor: "opensearch"
+    version: "2.5.0"
+    tlsSkipVerify: true
+
 # - name: Jaeger
 #   type: jaeger
 #   access: proxy
