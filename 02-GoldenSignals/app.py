@@ -19,6 +19,7 @@ def fast():
     start_time = time.time()
     REQUEST_COUNT.labels(endpoint='/fast', status='200').inc()
     LATENCY.labels(endpoint='/fast').observe(time.time() - start_time)
+    DB_CNX.set(random.uniform(30, 40))  # Simulation de nbre de connexions utilisées
     return jsonify({'message': 'Réponse rapide'})
 
 @app.route('/slow')
@@ -27,6 +28,7 @@ def slow():
     time.sleep(random.uniform(1, 3))  # Simulation de latence
     REQUEST_COUNT.labels(endpoint='/slow', status='200').inc()
     LATENCY.labels(endpoint='/slow').observe(time.time() - start_time)
+    DB_CNX.set(random.uniform(30, 40))  # Simulation de nbre de connexions utilisées
     return jsonify({'message': 'Réponse lente'})
 
 @app.route('/standard')
@@ -34,6 +36,7 @@ def standard():
     REQUEST_COUNT.labels(endpoint='/standard', status='200').inc()
     ERROR_RATE.labels(endpoint='/standard').inc()
     LATENCY.labels(endpoint='/standard').observe(random.uniform(0.15, 0.25)) # between 10ms and 200ms
+    DB_CNX.set(random.uniform(30, 40))  # Simulation de nbre de connexions utilisées
     return jsonify({'message': 'Réponse standard'}), 200
 
 @app.route('/errorfast')
@@ -41,12 +44,20 @@ def errorfast():
     REQUEST_COUNT.labels(endpoint='/errorfast', status='500').inc()
     ERROR_RATE.labels(endpoint='/errorfast').inc()
     LATENCY.labels(endpoint='/errorfast').observe(random.uniform(0.001, 0.02)) # between 10ms and 200ms
+    DB_CNX.set(random.uniform(30, 40))  # Simulation de nbre de connexions utilisées
     return jsonify({'message': 'Erreur simulée fast'}), 500
+
+@app.route('/highdb')
+def highdb():
+    REQUEST_COUNT.labels(endpoint='/highdb', status='500').inc()
+    ERROR_RATE.labels(endpoint='/highdb').inc()
+    LATENCY.labels(endpoint='/highdb').observe(random.uniform(1, 2)) # between 10ms and 200ms
+    DB_CNX.set(random.uniform(45, 65))  # Simulation de nbre de connexions utilisées
+    return jsonify({'message': 'Utilisation haute DB'}), 500
 
 @app.route('/metrics')
 def metrics():
     CPU_USAGE.set(random.uniform(10, 90))  # Simulation d'utilisation CPU
-    DB_CNX.set(random.uniform(20, 50))  # Simulation de nbre de connexions utilisées
     return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
 
 if __name__ == '__main__':

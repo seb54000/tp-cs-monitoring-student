@@ -18,6 +18,9 @@ services:
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:rw
       - prometheus-data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.size=1GB"
     # ports:
     # - 9090:9090/tcp
     restart: always
