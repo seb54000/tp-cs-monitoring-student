@@ -28,9 +28,9 @@ datasources:
     version: "2.5.0"
     tlsSkipVerify: true
 
-# - name: Jaeger
-#   type: jaeger
-#   access: proxy
-#   url: http://localhost:16686
-#   isDefault: false
-#   editable: true
+- name: Jaeger
+  type: jaeger
+  access: proxy
+  url: http://localhost:16686
+  isDefault: false
+  editable: true

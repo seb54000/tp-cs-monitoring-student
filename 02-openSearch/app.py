@@ -20,7 +20,7 @@ resource = Resource.create({"service.name": "slow-api"})
 provider = TracerProvider(resource=resource)
 trace.set_tracer_provider(provider)
 # Ajout de l'exporteur OTLP pour envoyer les traces à Jaeger
-otlp_exporter = OTLPSpanExporter(endpoint="http://jaeger:4317", insecure=True)
+otlp_exporter = OTLPSpanExporter(endpoint="http://localhost:4317", insecure=True)
 provider.add_span_processor(BatchSpanProcessor(otlp_exporter))
 
 # Instrumentation Flask et Requests (APRES avoir défini le TracerProvider)
@@ -143,6 +143,8 @@ def slow_response():
 
 @app.route('/metrics')
 def metrics():
+    log = logging.getLogger('werkzeug')
+    log.setLevel(logging.CRITICAL)
     CPU_USAGE.set(random.uniform(10, 90))  # Simulation d'utilisation CPU
     return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
 
