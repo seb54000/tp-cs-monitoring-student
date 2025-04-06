@@ -7,3 +7,6 @@ scrape_configs:
       - targets:
         - "localhost:5000"
         - "localhost:9100"
+
+rule_files:
+  - alert_rules.yml
