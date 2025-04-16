@@ -18,7 +18,7 @@ CONTENT_TYPE_LATEST = str('text/plain; version=0.0.4; charset=utf-8')
 def fast():
     start_time = time.time()
     REQUEST_COUNT.labels(endpoint='/fast', status='200').inc()
-    LATENCY.labels(endpoint='/fast').observe(time.time() - start_time)
+    LATENCY.labels(endpoint='/fast').observe(random.uniform(0.001, 0.005))
     DB_CNX.set(random.uniform(30, 40))  # Simulation de nbre de connexions utilisées
     return jsonify({'message': 'Réponse rapide'})
 
@@ -35,7 +35,7 @@ def slow():
 def standard():
     REQUEST_COUNT.labels(endpoint='/standard', status='200').inc()
     ERROR_RATE.labels(endpoint='/standard').inc()
-    LATENCY.labels(endpoint='/standard').observe(random.uniform(0.15, 0.25)) # between 10ms and 200ms
+    LATENCY.labels(endpoint='/standard').observe(random.uniform(0.15, 0.25)) # between 10ms and 250ms
     DB_CNX.set(random.uniform(30, 40))  # Simulation de nbre de connexions utilisées
     return jsonify({'message': 'Réponse standard'}), 200
 
@@ -43,7 +43,7 @@ def standard():
 def errorfast():
     REQUEST_COUNT.labels(endpoint='/errorfast', status='500').inc()
     ERROR_RATE.labels(endpoint='/errorfast').inc()
-    LATENCY.labels(endpoint='/errorfast').observe(random.uniform(0.001, 0.02)) # between 10ms and 200ms
+    LATENCY.labels(endpoint='/errorfast').observe(random.uniform(0.001, 0.012)) # between 10ms and 120ms
     DB_CNX.set(random.uniform(30, 40))  # Simulation de nbre de connexions utilisées
     return jsonify({'message': 'Erreur simulée fast'}), 500
 
