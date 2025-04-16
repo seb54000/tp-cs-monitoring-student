@@ -1,0 +1,10 @@
+global:
+  resolve_timeout: 5s
+
+route:
+  receiver: file-logger
+
+receivers:
+  - name: file-logger
+    webhook_configs:
+      - url: 'http://localhost:5001/webhook'

@@ -1,0 +1,17 @@
+global:
+  scrape_interval: 5s
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['localhost:9093']
+
+scrape_configs:
+  - job_name: "GoldenSignals"
+    static_configs:
+      - targets:
+        - "localhost:5000"
+        - "localhost:9100"
+
+rule_files:
+  - alert_rules.yml
