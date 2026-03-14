@@ -1,0 +1,124 @@
+volumes:
+  grafana-data:
+  opensearch-data:
+
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.122.1
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml:ro
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+      - "9464:9464"
+
+  prometheus:
+    image: prom/prometheus:v3.1.0
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.size=1GB"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:11.5.2
+    depends_on:
+      - prometheus
+      - jaeger
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=grafana
+      - GF_INSTALL_PLUGINS=grafana-opensearch-datasource
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana-provisioning:/etc/grafana/provisioning:ro
+    ports:
+      - "3000:3000"
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.64.0
+    ports:
+      - "16686:16686"
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.17.1
+    environment:
+      - DATA_SOURCE_NAME=postgresql://postgres:postgres@host.docker.internal:5432/tasks?sslmode=disable
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "9187:9187"
+
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.67.0
+    environment:
+      - REDIS_ADDR=redis://host.docker.internal:6379
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "9121:9121"
+
+  fluentbit:
+    image: fluent/fluent-bit:3.2.5
+    depends_on:
+      - opensearch
+    command: ["/fluent-bit/bin/fluent-bit", "-c", "/fluent-bit/etc/fluent-bit.conf"]
+    volumes:
+      - ./fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
+      - ./fluent-bit.parsers.conf:/fluent-bit/etc/parsers.conf:ro
+      - /home/seb/tpcs-demoboard/observability-logs:/logs:ro
+
+  opensearch:
+    image: opensearchproject/opensearch:2.18.0
+    environment:
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=Str0ng!DemoBoard#2026
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - opensearch-data:/usr/share/opensearch/data
+    ports:
+      - "9200:9200"
+
+  opensearch-dashboards:
+    image: opensearchproject/opensearch-dashboards:2.18.0
+    depends_on:
+      - opensearch
+    environment:
+      - OPENSEARCH_HOSTS=["https://opensearch:9200"]
+      - OPENSEARCH_USERNAME=admin
+      - OPENSEARCH_PASSWORD=Str0ng!DemoBoard#2026
+      - OPENSEARCH_SSL_VERIFICATIONMODE=none
+    ports:
+      - "5601:5601"
+
+  init-opensearch:
+    image: curlimages/curl:8.12.1
+    depends_on:
+      - opensearch
+      - opensearch-dashboards
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+          set -eu
+          until curl -ks -u admin:Str0ng!DemoBoard#2026 https://opensearch:9200 >/dev/null; do sleep 2; done
+          until curl -s -u admin:Str0ng!DemoBoard#2026 http://opensearch-dashboards:5601/app/home >/dev/null; do sleep 2; done
+          cat >/tmp/index-pattern.json <<'EOF'
+          {
+            "attributes": {
+              "title": "demoboard-logs*",
+              "timeFieldName": "timestamp"
+            }
+          }
+          EOF
+          curl -s -u admin:Str0ng!DemoBoard#2026 -H "osd-xsrf: true" -H "Content-Type: application/json" \
+            -d @/tmp/index-pattern.json \
+            http://opensearch-dashboards:5601/api/saved_objects/index-pattern/demoboard-logs
+          echo "OpenSearch Dashboards initialized"
