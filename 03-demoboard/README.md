@@ -63,3 +63,37 @@ Une variante de test basée sur `grafana/otel-lgtm` est disponible dans `docker-
 docker compose -f docker-compose.lgtm.yaml up -d
 python3 load_test.py
 ```
+
+## Déploiement Kubernetes EKS
+
+Deux bundles Kubernetes sont fournis dans [`kubernetes`](tp-cs-monitoring-student/03-demoboard/kubernetes) :
+
+- [`monitoring-classic.eks.yaml`](tp-cs-monitoring-student/03-demoboard/kubernetes/monitoring-classic.eks.yaml) pour `OTEL Collector + Prometheus + Grafana + Jaeger + OpenSearch`
+- [`monitoring-lgtm.eks.yaml`](tp-cs-monitoring-student/03-demoboard/kubernetes/monitoring-lgtm.eks.yaml) pour `grafana/otel-lgtm + promtail`
+
+Caractéristiques :
+
+- namespace cible : `vmXX`
+- les deux variantes exposent le même endpoint OTLP interne : `otel-collector.vmXX.svc.cluster.local`
+- les logs sont collectés depuis les logs conteneurs Kubernetes via `DaemonSet`, pas via un montage local
+- les ingress sont fournis avec des hôtes d'exemple `*.vmXX.eks.local` à adapter
+- les PVC supposent une `StorageClass` par défaut dans EKS
+
+Exemple :
+
+```bash
+eks apply -f 03-demoboard/kubernetes/monitoring-classic.eks.yaml
+# ou
+eks apply -f 03-demoboard/kubernetes/monitoring-lgtm.eks.yaml
+```
+
+Pour que Demoboard envoie ses traces et métriques vers la stack EKS, il faut pointer son export OTLP vers :
+
+```text
+http://otel-collector.vmXX.svc.cluster.local:4318
+```
+
+Les exporters `postgres` et `redis` de la variante classique ciblent les services Kubernetes suivants, attendus dans le namespace `vmXX` :
+
+- `postgres.vmXX.svc.cluster.local:5432`
+- `redis.vmXX.svc.cluster.local:6379`

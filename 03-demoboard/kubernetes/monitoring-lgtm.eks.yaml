@@ -1,0 +1,688 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vm00
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: promtail-config
+  namespace: vm00
+data:
+  config.yml: |
+    server:
+      http_listen_port: 9080
+      grpc_listen_port: 0
+
+    positions:
+      filename: /run/promtail/positions.yaml
+
+    clients:
+      - url: http://lgtm.vm00.svc.cluster.local:3100/loki/api/v1/push
+
+    scrape_configs:
+      - job_name: demoboard
+        static_configs:
+          - targets: [localhost]
+            labels:
+              job: demoboard
+              __path__: /var/log/containers/*_demoboard_*.log
+
+        pipeline_stages:
+          - cri: {}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-bootstrap
+  namespace: vm00
+data:
+  import_grafana_dashboard.py: |
+    import json
+    import time
+    import urllib.request
+
+    GRAFANA_URL = "http://grafana.vm00.svc.cluster.local:3000"
+    AUTH_HEADER = "Basic YWRtaW46YWRtaW4="
+
+    def wait_for_grafana():
+        request = urllib.request.Request(
+            f"{GRAFANA_URL}/api/health",
+            headers={"Authorization": AUTH_HEADER},
+        )
+        deadline = time.time() + 180
+        while time.time() < deadline:
+            try:
+                with urllib.request.urlopen(request, timeout=5) as response:
+                    if response.status == 200:
+                        return
+            except Exception:
+                pass
+            time.sleep(3)
+        raise RuntimeError("Grafana did not become ready in time")
+
+    def import_dashboard():
+        with open("/dashboards/demoboard-lgtm-overview.json", "r", encoding="utf-8") as handle:
+            dashboard = json.load(handle)
+        payload = json.dumps({
+            "dashboard": dashboard,
+            "folderId": 0,
+            "overwrite": True,
+        }).encode()
+        request = urllib.request.Request(
+            f"{GRAFANA_URL}/api/dashboards/db",
+            data=payload,
+            headers={
+                "Authorization": AUTH_HEADER,
+                "Content-Type": "application/json",
+            },
+            method="POST",
+        )
+        with urllib.request.urlopen(request, timeout=15) as response:
+            result = json.loads(response.read().decode())
+        print(result["status"], result["uid"])
+
+    wait_for_grafana()
+    import_dashboard()
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: demoboard-lgtm-dashboard
+  namespace: vm00
+data:
+  demoboard-lgtm-overview.json: |
+    {
+      "annotations": {
+        "list": [
+          {
+            "builtIn": 1,
+            "datasource": {
+              "type": "grafana",
+              "uid": "-- Grafana --"
+            },
+            "enable": true,
+            "hide": true,
+            "iconColor": "rgba(0, 211, 255, 1)",
+            "name": "Annotations & Alerts",
+            "type": "dashboard"
+          }
+        ]
+      },
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 0,
+      "id": null,
+      "links": [
+        {
+          "title": "Prometheus",
+          "type": "link",
+          "url": "http://prometheus.vm00.eks.local"
+        },
+        {
+          "title": "Grafana Explore Logs",
+          "type": "link",
+          "url": "/explore?orgId=1&left=%5B%22now-30m%22,%22now%22,%22loki%22,%7B%22expr%22:%22%7Bjob%3D~%5C%22demoboard.*%5C%22%7D%22%7D%5D"
+        },
+        {
+          "title": "Grafana Explore Traces",
+          "type": "link",
+          "url": "/explore?orgId=1&left=%5B%22now-30m%22,%22now%22,%22tempo%22,%7B%22queryType%22:%22search%22,%22serviceName%22:%22demoboard-api%22%7D%5D"
+        }
+      ],
+      "panels": [
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "grafana"
+          },
+          "gridPos": {
+            "h": 5,
+            "w": 24,
+            "x": 0,
+            "y": 0
+          },
+          "id": 1,
+          "options": {
+            "code": {
+              "language": "plaintext",
+              "showLineNumbers": false,
+              "showMiniMap": false
+            },
+            "content": "# Demoboard LGTM\n\n- Prometheus pour les metriques\n- Tempo pour les traces\n- Loki pour les logs\n- endpoint OTLP attendu: `otel-collector.vm00.svc.cluster.local`",
+            "mode": "markdown"
+          },
+          "pluginVersion": "12.4.1",
+          "type": "text"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "orange",
+                    "value": 0.5
+                  },
+                  {
+                    "color": "red",
+                    "value": 1
+                  }
+                ]
+              },
+              "unit": "reqps"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 6,
+            "x": 0,
+            "y": 5
+          },
+          "id": 2,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(demoboard_api_requests_total[5m]))",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "API Request Rate",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "orange",
+                    "value": 250
+                  },
+                  {
+                    "color": "red",
+                    "value": 1000
+                  }
+                ]
+              },
+              "unit": "ms"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 6,
+            "x": 6,
+            "y": 5
+          },
+          "id": 3,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "editorMode": "code",
+              "expr": "histogram_quantile(0.95, sum by (le) (rate(demoboard_api_request_duration_ms_milliseconds_bucket[5m])))",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "API p95",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "orange",
+                    "value": 0.05
+                  },
+                  {
+                    "color": "red",
+                    "value": 0.2
+                  }
+                ]
+              },
+              "unit": "ops"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 6,
+            "x": 12,
+            "y": 5
+          },
+          "id": 4,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(demoboard_worker_jobs_processed_total[5m]))",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Worker Throughput",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "orange",
+                    "value": 5000
+                  },
+                  {
+                    "color": "red",
+                    "value": 7000
+                  }
+                ]
+              },
+              "unit": "ms"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 6,
+            "x": 18,
+            "y": 5
+          },
+          "id": 5,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "editorMode": "code",
+              "expr": "histogram_quantile(0.95, sum by (le) (rate(demoboard_worker_job_duration_ms_milliseconds_bucket[15m])))",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Worker p95",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 24,
+            "x": 0,
+            "y": 13
+          },
+          "id": 8,
+          "options": {
+            "dedupStrategy": "none",
+            "enableLogDetails": true,
+            "prettifyLogMessage": false,
+            "showLabels": true,
+            "showTime": true,
+            "sortOrder": "Descending",
+            "wrapLogMessage": true
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "loki",
+                "uid": "loki"
+              },
+              "editorMode": "code",
+              "expr": "{job=~\"demoboard.*\"}",
+              "queryType": "range",
+              "refId": "A"
+            }
+          ],
+          "title": "Recent Logs",
+          "type": "logs"
+        }
+      ],
+      "refresh": "10s",
+      "schemaVersion": 41,
+      "tags": [
+        "demoboard",
+        "lgtm",
+        "otel"
+      ],
+      "templating": {
+        "list": []
+      },
+      "time": {
+        "from": "now-30m",
+        "to": "now"
+      },
+      "title": "Demoboard LGTM Overview",
+      "uid": "demoboard-lgtm-overview",
+      "version": 1
+    }
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: lgtm-pvc
+  namespace: vm00
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lgtm
+  namespace: vm00
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lgtm
+  template:
+    metadata:
+      labels:
+        app: lgtm
+    spec:
+      containers:
+        - name: lgtm
+          image: grafana/otel-lgtm:latest
+          ports:
+            - containerPort: 3000
+            - containerPort: 3100
+            - containerPort: 3200
+            - containerPort: 4040
+            - containerPort: 4317
+            - containerPort: 4318
+            - containerPort: 9090
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: lgtm-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-collector
+  namespace: vm00
+spec:
+  selector:
+    app: lgtm
+  ports:
+    - name: otlp-grpc
+      port: 4317
+      targetPort: 4317
+    - name: otlp-http
+      port: 4318
+      targetPort: 4318
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: vm00
+spec:
+  selector:
+    app: lgtm
+  ports:
+    - name: http
+      port: 3000
+      targetPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: vm00
+spec:
+  selector:
+    app: lgtm
+  ports:
+    - name: http
+      port: 9090
+      targetPort: 9090
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lgtm
+  namespace: vm00
+spec:
+  selector:
+    app: lgtm
+  ports:
+    - name: loki
+      port: 3100
+      targetPort: 3100
+    - name: tempo
+      port: 3200
+      targetPort: 3200
+    - name: pyroscope
+      port: 4040
+      targetPort: 4040
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: promtail
+  namespace: vm00
+spec:
+  selector:
+    matchLabels:
+      app: promtail
+  template:
+    metadata:
+      labels:
+        app: promtail
+    spec:
+      containers:
+        - name: promtail
+          image: grafana/promtail:3.6.1
+          args:
+            - -config.file=/etc/promtail/config.yml
+          volumeMounts:
+            - name: config
+              mountPath: /etc/promtail
+            - name: positions
+              mountPath: /run/promtail
+            - name: varlog
+              mountPath: /var/log
+              readOnly: true
+          securityContext:
+            runAsUser: 0
+      volumes:
+        - name: config
+          configMap:
+            name: promtail-config
+        - name: positions
+          emptyDir: {}
+        - name: varlog
+          hostPath:
+            path: /var/log
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: grafana-bootstrap
+  namespace: vm00
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: grafana-bootstrap
+          image: python:3.12-alpine
+          command:
+            - python3
+            - /bootstrap/import_grafana_dashboard.py
+          volumeMounts:
+            - name: script
+              mountPath: /bootstrap
+            - name: dashboard
+              mountPath: /dashboards
+      volumes:
+        - name: script
+          configMap:
+            name: grafana-bootstrap
+        - name: dashboard
+          configMap:
+            name: demoboard-lgtm-dashboard
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: grafana
+  namespace: vm00
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: grafana.vm00.eks.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: grafana
+                port:
+                  number: 3000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: prometheus
+  namespace: vm00
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: prometheus.vm00.eks.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: prometheus
+                port:
+                  number: 9090
