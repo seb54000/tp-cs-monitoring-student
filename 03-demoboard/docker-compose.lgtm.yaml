@@ -1,0 +1,35 @@
+name: 03-demoboard-lgtm
+
+volumes:
+  lgtm-data:
+
+services:
+  lgtm:
+    image: grafana/otel-lgtm:latest
+    ports:
+      - "3000:3000"
+      - "4317:4317"
+      - "4318:4318"
+      - "9090:9090"
+    volumes:
+      - lgtm-data:/data
+
+  promtail:
+    image: grafana/promtail:3.6.1
+    command:
+      - -config.file=/etc/promtail/config.yml
+    volumes:
+      - ./promtail-config.yaml:/etc/promtail/config.yml:ro
+      - /home/seb/tpcs-demoboard/observability-logs:/var/log/demoboard:ro
+
+  grafana-bootstrap:
+    image: python:3.12-alpine
+    depends_on:
+      - lgtm
+    command:
+      - python3
+      - /bootstrap/import_grafana_dashboard.py
+    restart: "no"
+    volumes:
+      - ./grafana-provisioning-lgtm/dashboards/json:/dashboards:ro
+      - ./scripts/import_grafana_dashboard.py:/bootstrap/import_grafana_dashboard.py:ro

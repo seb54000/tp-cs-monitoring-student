@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: demoboard
+    orgId: 1
+    folder: Demoboard
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    options:
+      path: /etc/grafana/provisioning/dashboards/json
