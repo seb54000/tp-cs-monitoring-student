@@ -720,10 +720,17 @@ kind: Ingress
 metadata:
   name: grafana
   namespace: vm00
+  annotations:
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
 spec:
   ingressClassName: nginx
+  tls:
+    - hosts:
+        - grafana-vm00.eks00.tpcsonline.org
+      secretName: tls-certificate
   rules:
-    - host: grafana.vm00.eks.local
+    - host: grafana-vm00.eks00.tpcsonline.org
       http:
         paths:
           - path: /
@@ -739,10 +746,17 @@ kind: Ingress
 metadata:
   name: prometheus
   namespace: vm00
+  annotations:
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
 spec:
   ingressClassName: nginx
+  tls:
+    - hosts:
+        - prometheus-vm00.eks00.tpcsonline.org
+      secretName: tls-certificate
   rules:
-    - host: prometheus.vm00.eks.local
+    - host: prometheus-vm00.eks00.tpcsonline.org
       http:
         paths:
           - path: /
@@ -758,10 +772,17 @@ kind: Ingress
 metadata:
   name: jaeger
   namespace: vm00
+  annotations:
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
 spec:
   ingressClassName: nginx
+  tls:
+    - hosts:
+        - jaeger-vm00.eks00.tpcsonline.org
+      secretName: tls-certificate
   rules:
-    - host: jaeger.vm00.eks.local
+    - host: jaeger-vm00.eks00.tpcsonline.org
       http:
         paths:
           - path: /
@@ -777,10 +798,17 @@ kind: Ingress
 metadata:
   name: opensearch-dashboards
   namespace: vm00
+  annotations:
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
 spec:
   ingressClassName: nginx
+  tls:
+    - hosts:
+        - opensearch-vm00.eks00.tpcsonline.org
+      secretName: tls-certificate
   rules:
-    - host: opensearch.vm00.eks.local
+    - host: opensearch-vm00.eks00.tpcsonline.org
       http:
         paths:
           - path: /

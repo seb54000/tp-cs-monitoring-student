@@ -72,6 +72,9 @@ Deux bundles Kubernetes sont fournis dans [`kubernetes`](tp-cs-monitoring-studen
 
 - [`monitoring-classic.eks.yaml`](tp-cs-monitoring-student/03-demoboard/kubernetes/monitoring-classic.eks.yaml) pour `OTEL Collector + Prometheus + Grafana + Jaeger + OpenSearch`
 - [`monitoring-lgtm.eks.yaml`](tp-cs-monitoring-student/03-demoboard/kubernetes/monitoring-lgtm.eks.yaml) pour `grafana/otel-lgtm + promtail`
+- côté Demoboard, deux manifests sont fournis à la racine du dépôt source :
+  - `demoboard-kubernetes-observability.yml` pour le mode initial `v1`
+  - `demoboard-kubernetes-observability-scaled.yml` pour le mode `v2` scalé
 
 Caractéristiques :
 
@@ -79,8 +82,9 @@ Caractéristiques :
 - les deux variantes exposent le même endpoint OTLP interne : `otel-collector.vmXX.svc.cluster.local`
 - les logs sont collectés depuis les logs conteneurs Kubernetes via `DaemonSet`, pas via un montage local
 - les manifests ajoutent un enrichissement Kubernetes : pod, namespace, node, container et, selon la variante, deployment
-- les ingress sont fournis avec des hôtes d'exemple `*.vmXX.eks.local` à adapter
+- les ingress utilisent par défaut le wildcard TLS EKS sous la forme `service-vmXX.eksYY.<dns_subdomain>` avec le secret `tls-certificate`
 - les PVC supposent une `StorageClass` par défaut dans EKS
+- un mémo de commandes est généré sur chaque VM étudiante dans `~/tpmon_eks_demoboard_monitoring_lgtm.txt`
 
 Exemple :
 

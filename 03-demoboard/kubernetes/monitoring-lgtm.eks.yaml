@@ -169,7 +169,7 @@ data:
         {
           "title": "Prometheus",
           "type": "link",
-          "url": "http://prometheus.vm00.eks.local"
+          "url": "https://prometheus-vm00.eks00.tpcsonline.org"
         },
         {
           "title": "Grafana Explore Logs",
@@ -706,10 +706,17 @@ kind: Ingress
 metadata:
   name: grafana
   namespace: vm00
+  annotations:
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
 spec:
   ingressClassName: nginx
+  tls:
+    - hosts:
+        - grafana-vm00.eks00.tpcsonline.org
+      secretName: tls-certificate
   rules:
-    - host: grafana.vm00.eks.local
+    - host: grafana-vm00.eks00.tpcsonline.org
       http:
         paths:
           - path: /
@@ -725,10 +732,17 @@ kind: Ingress
 metadata:
   name: prometheus
   namespace: vm00
+  annotations:
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
 spec:
   ingressClassName: nginx
+  tls:
+    - hosts:
+        - prometheus-vm00.eks00.tpcsonline.org
+      secretName: tls-certificate
   rules:
-    - host: prometheus.vm00.eks.local
+    - host: prometheus-vm00.eks00.tpcsonline.org
       http:
         paths:
           - path: /
