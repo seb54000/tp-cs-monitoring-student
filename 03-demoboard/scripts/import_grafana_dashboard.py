@@ -48,8 +48,58 @@ def import_dashboard(path: Path) -> None:
     print(f"Imported {path.name}: {body['status']} ({body['uid']})")
 
 
+def update_tempo_traces_to_logs() -> None:
+    request = urllib.request.Request(
+        f"{GRAFANA_URL}/api/datasources/uid/tempo",
+        headers={"Authorization": AUTH_HEADER},
+    )
+    with urllib.request.urlopen(request, timeout=15) as response:
+        datasource = json.loads(response.read().decode())
+
+    json_data = datasource.get("jsonData", {})
+    traces_to_logs = json_data.get("tracesToLogsV2", {})
+    traces_to_logs.update(
+        {
+            "customQuery": True,
+            "datasourceUid": "loki",
+            "query": "{${__tags}} | json | trace_id = \"${__trace.traceId}\"",
+            "spanStartTimeShift": "-5m",
+            "spanEndTimeShift": "5m",
+            "tags": [{"key": "service.name", "value": "service_name"}],
+        }
+    )
+    json_data["tracesToLogsV2"] = traces_to_logs
+    datasource["jsonData"] = json_data
+
+    payload = json.dumps(
+        {
+            "name": datasource["name"],
+            "type": datasource["type"],
+            "access": datasource["access"],
+            "url": datasource["url"],
+            "basicAuth": datasource.get("basicAuth", False),
+            "isDefault": datasource.get("isDefault", False),
+            "jsonData": datasource["jsonData"],
+        }
+    ).encode()
+
+    request = urllib.request.Request(
+        f"{GRAFANA_URL}/api/datasources/uid/tempo",
+        data=payload,
+        headers={
+            "Authorization": AUTH_HEADER,
+            "Content-Type": "application/json",
+        },
+        method="PUT",
+    )
+    with urllib.request.urlopen(request, timeout=15) as response:
+        body = json.loads(response.read().decode())
+    print(f"Updated Tempo datasource: {body['datasource']['uid']}")
+
+
 def main() -> None:
     wait_for_grafana()
+    update_tempo_traces_to_logs()
     for path in sorted(Path("/dashboards").glob("*.json")):
         import_dashboard(path)
 
