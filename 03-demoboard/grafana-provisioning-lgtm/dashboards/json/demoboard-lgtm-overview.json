@@ -583,6 +583,7 @@
         "type": "loki",
         "uid": "loki"
       },
+      "description": "Logs Loki bornes par la plage de temps selectionnee dans Grafana. Les bornes start/end ne se mettent pas dans la requete LogQL, elles sont transmises par Grafana.",
       "gridPos": {
         "h": 10,
         "w": 24,
@@ -597,7 +598,7 @@
         "showCommonLabels": false,
         "showLabels": true,
         "showTime": true,
-        "sortOrder": "Descending",
+        "sortOrder": "Ascending",
         "wrapLogMessage": true
       },
       "targets": [
@@ -612,7 +613,7 @@
           "refId": "A"
         }
       ],
-      "title": "Recent Logs",
+      "title": "Logs in Selected Range",
       "type": "logs"
     },
     {
