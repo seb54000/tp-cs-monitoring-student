@@ -14,6 +14,7 @@ MIN_DELAY_SECONDS = 1
 MAX_DELAY_SECONDS = 3
 START_JOB_PROBABILITY = 0.4
 DELETE_TASK_PROBABILITY = 0.25
+MAX_TASK_COUNT = 10
 
 ADJECTIVES = [
     "blue",
@@ -93,6 +94,35 @@ def _delete_random_task() -> None:
         print(f"[ERROR] delete failed for task_id={task_id} ({status}): {payload}")
 
 
+def _prune_tasks() -> None:
+    tasks = _list_tasks()
+    if len(tasks) <= MAX_TASK_COUNT:
+        return
+
+    deletable_tasks = [
+        task for task in tasks if task.get("status") in {"pending", "completed"}
+    ]
+    if not deletable_tasks:
+        return
+
+    excess_count = len(tasks) - MAX_TASK_COUNT
+    # Prefer deleting the oldest completed tasks first to keep the board small.
+    deletable_tasks.sort(key=lambda task: (task.get("status") != "completed", task["id"]))
+
+    deleted_count = 0
+    for task in deletable_tasks[:excess_count]:
+        task_id = task["id"]
+        status, payload = _request(f"/tasks/{task_id}", method="DELETE")
+        if status == 204:
+            deleted_count += 1
+            print(f"[PRUNE] task_id={task_id}")
+        else:
+            print(f"[ERROR] prune failed for task_id={task_id} ({status}): {payload}")
+
+    if deleted_count:
+        print(f"[PRUNE] deleted={deleted_count} remaining_target={MAX_TASK_COUNT}")
+
+
 def main() -> int:
     print(f"Starting Demoboard load test against {API_BASE_URL}")
     print("Press Ctrl+C to stop.")
@@ -116,6 +146,8 @@ def main() -> int:
 
                 if random.random() < DELETE_TASK_PROBABILITY:
                     _delete_random_task()
+
+                _prune_tasks()
 
             sleep_for = random.uniform(MIN_DELAY_SECONDS, MAX_DELAY_SECONDS)
             time.sleep(sleep_for)
