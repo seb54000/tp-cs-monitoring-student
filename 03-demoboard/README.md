@@ -59,6 +59,7 @@ Une variante de test basée sur `grafana/otel-lgtm` est disponible dans `docker-
 - elle ne doit simplement pas tourner en même temps que la stack `03-demoboard`
 - elle ajoute `promtail` pour pousser les logs Demoboard vers Loki à partir de `tpcs-demoboard/observability-logs/`
 - Grafana importe automatiquement au démarrage le dashboard `Demoboard LGTM Overview`
+- le panneau `Worker Latency` affiche la latence des traitements worker avec des exemplars OTEL permettant d'ouvrir des traces Tempo
 
 ```bash
 docker compose -f docker-compose.lgtm.yaml up -d

@@ -503,7 +503,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 22
+        "y": 31
       },
       "id": 8,
       "options": {
@@ -530,6 +530,120 @@
       ],
       "title": "Recent Logs",
       "type": "logs"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Latence des traitements worker avec exemplars OTEL. Les marqueurs permettent d'ouvrir une trace Tempo depuis un point du graphe.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 4,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "line"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "orange",
+                "value": 2500
+              },
+              {
+                "color": "red",
+                "value": 4000
+              }
+            ]
+          },
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 22
+      },
+      "id": 9,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(demoboard_worker_job_duration_ms_milliseconds_bucket[5m])))",
+          "legendFormat": "worker p95",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(demoboard_worker_job_duration_ms_milliseconds_sum[5m])) / sum(rate(demoboard_worker_job_duration_ms_milliseconds_count[5m]))",
+          "legendFormat": "worker avg",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "Worker Latency",
+      "type": "timeseries"
     }
   ],
   "refresh": "10s",
@@ -550,6 +664,6 @@
   "timezone": "",
   "title": "Demoboard LGTM Overview",
   "uid": "demoboard-lgtm-overview",
-  "version": 1,
+  "version": 2,
   "weekStart": ""
 }
