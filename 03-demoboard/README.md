@@ -44,6 +44,7 @@ Identifiants OpenSearch/OpenSearch Dashboards :
 ## Notes pédagogiques
 
 - Les services `api-service` et `worker-service` exportent traces et métriques en OTLP HTTP vers `http://host.docker.internal:4318`.
+- Le worker Demoboard simule par défaut un temps de traitement aléatoire entre `1.5` et `2.7` secondes, ajustable via `WORKER_PROCESSING_TIME_MIN_SECONDS` et `WORKER_PROCESSING_TIME_MAX_SECONDS`.
 - Les logs applicatifs sont écrits dans `tpcs-demoboard/observability-logs/`, puis collectés par Fluent Bit.
 - PostgreSQL et Redis ne sont pas modifiés : leurs métriques sont exposées par `postgres-exporter` et `redis-exporter`.
 - Grafana expose les datasources `Prometheus`, `Jaeger` et `OpenSearch`.

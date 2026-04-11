@@ -372,11 +372,11 @@ data:
                   },
                   {
                     "color": "orange",
-                    "value": 5000
+                    "value": 2500
                   },
                   {
                     "color": "red",
-                    "value": 7000
+                    "value": 4000
                   }
                 ]
               },
