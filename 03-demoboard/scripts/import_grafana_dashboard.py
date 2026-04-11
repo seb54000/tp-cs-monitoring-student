@@ -69,6 +69,26 @@ def update_tempo_traces_to_logs() -> None:
         }
     )
     json_data["tracesToLogsV2"] = traces_to_logs
+    json_data["tracesToMetrics"] = {
+        "datasourceUid": "prometheus",
+        "spanStartTimeShift": "-15m",
+        "spanEndTimeShift": "15m",
+        "tags": [{"key": "service.name", "value": "service"}],
+        "queries": [
+            {
+                "name": "Span rate",
+                "query": 'sum(rate(traces_spanmetrics_calls_total{$__tags, span_name="${__span.name}"}[5m]))',
+            },
+            {
+                "name": "Span p95 latency",
+                "query": 'histogram_quantile(0.95, sum by (le) (rate(traces_spanmetrics_latency_bucket{$__tags, span_name="${__span.name}"}[5m])))',
+            },
+            {
+                "name": "Service p95 latency",
+                "query": 'histogram_quantile(0.95, sum by (le) (rate(traces_spanmetrics_latency_bucket{$__tags}[5m])))',
+            },
+        ],
+    }
     datasource["jsonData"] = json_data
 
     payload = json.dumps(
