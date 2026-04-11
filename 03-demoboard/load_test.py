@@ -13,8 +13,8 @@ API_BASE_URL = os.getenv("DEMOBOARD_API_URL", "http://localhost:8000").rstrip("/
 MIN_DELAY_SECONDS = 1
 MAX_DELAY_SECONDS = 3
 START_JOB_PROBABILITY = 0.4
-DELETE_TASK_PROBABILITY = 0.25
 MAX_TASK_COUNT = 10
+PRUNE_PROBABILITY = 0.15
 
 ADJECTIVES = [
     "blue",
@@ -76,24 +76,6 @@ def _list_tasks() -> list[dict]:
     return payload
 
 
-def _delete_random_task() -> None:
-    tasks = _list_tasks()
-    if not tasks:
-        return
-
-    deletable_tasks = [task for task in tasks if task.get("status") != "processing"]
-    if not deletable_tasks:
-        return
-
-    task = random.choice(deletable_tasks)
-    task_id = task["id"]
-    status, payload = _request(f"/tasks/{task_id}", method="DELETE")
-    if status == 204:
-        print(f"[DELETE] task_id={task_id}")
-    else:
-        print(f"[ERROR] delete failed for task_id={task_id} ({status}): {payload}")
-
-
 def _prune_tasks() -> None:
     tasks = _list_tasks()
     if len(tasks) <= MAX_TASK_COUNT:
@@ -144,10 +126,8 @@ def main() -> int:
                     else:
                         print(f"[ERROR] start-job failed for task_id={task_id} ({job_status}): {job_payload}")
 
-                if random.random() < DELETE_TASK_PROBABILITY:
-                    _delete_random_task()
-
-                _prune_tasks()
+                if random.random() < PRUNE_PROBABILITY:
+                    _prune_tasks()
 
             sleep_for = random.uniform(MIN_DELAY_SECONDS, MAX_DELAY_SECONDS)
             time.sleep(sleep_for)
