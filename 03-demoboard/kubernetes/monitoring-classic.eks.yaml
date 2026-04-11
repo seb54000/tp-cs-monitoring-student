@@ -117,7 +117,7 @@ data:
           logMessageField: log
           logLevelField: stream
           tlsSkipVerify: true
-          database: "[demoboard-logs-]YYYY.MM.DD"
+          database: "demoboard-logs-*"
 ---
 apiVersion: v1
 kind: ConfigMap

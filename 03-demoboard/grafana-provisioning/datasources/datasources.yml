@@ -26,8 +26,8 @@ datasources:
     jsonData:
       flavor: opensearch
       version: "2.18.0"
-      timeField: timestamp
+      timeField: "@timestamp"
       logMessageField: message
       logLevelField: level
       tlsSkipVerify: true
-      database: "[demoboard-logs-]YYYY.MM.DD"
+      database: "demoboard-logs-*"
