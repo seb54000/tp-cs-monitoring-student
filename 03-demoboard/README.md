@@ -78,6 +78,7 @@ Caractéristiques :
 - namespace cible : `vmXX`
 - les deux variantes exposent le même endpoint OTLP interne : `otel-collector.vmXX.svc.cluster.local`
 - les logs sont collectés depuis les logs conteneurs Kubernetes via `DaemonSet`, pas via un montage local
+- les manifests ajoutent un enrichissement Kubernetes : pod, namespace, node, container et, selon la variante, deployment
 - les ingress sont fournis avec des hôtes d'exemple `*.vmXX.eks.local` à adapter
 - les PVC supposent une `StorageClass` par défaut dans EKS
 
