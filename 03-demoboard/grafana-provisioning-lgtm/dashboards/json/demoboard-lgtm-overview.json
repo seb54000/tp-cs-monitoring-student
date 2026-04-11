@@ -322,7 +322,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(demoboard_worker_job_duration_ms_milliseconds_bucket[15m])))",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(demoboard_worker_job_duration_ms_milliseconds_bucket[2m])))",
           "range": true,
           "refId": "A"
         }
@@ -625,7 +625,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(demoboard_worker_job_duration_ms_milliseconds_bucket[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(demoboard_worker_job_duration_ms_milliseconds_bucket[2m])))",
           "legendFormat": "worker p95",
           "range": true,
           "refId": "A"
@@ -636,7 +636,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "sum(rate(demoboard_worker_job_duration_ms_milliseconds_sum[5m])) / sum(rate(demoboard_worker_job_duration_ms_milliseconds_count[5m]))",
+          "expr": "sum(rate(demoboard_worker_job_duration_ms_milliseconds_sum[2m])) / sum(rate(demoboard_worker_job_duration_ms_milliseconds_count[2m]))",
           "legendFormat": "worker avg",
           "range": true,
           "refId": "B"
