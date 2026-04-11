@@ -335,6 +335,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
+      "description": "Latence API par chemin avec exemplars OTEL. Les marqueurs permettent d'ouvrir une trace Tempo depuis un point de latence.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -485,6 +486,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
+          "exemplar": true,
           "expr": "histogram_quantile(0.95, sum by (le, url_path) (rate(demoboard_api_request_duration_ms_milliseconds_bucket[5m])))",
           "legendFormat": "{{url_path}}",
           "range": true,

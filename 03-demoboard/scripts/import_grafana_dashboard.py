@@ -117,9 +117,56 @@ def update_tempo_traces_to_logs() -> None:
     print(f"Updated Tempo datasource: {body['datasource']['uid']}")
 
 
+def update_loki_logs_to_traces() -> None:
+    request = urllib.request.Request(
+        f"{GRAFANA_URL}/api/datasources/uid/loki",
+        headers={"Authorization": AUTH_HEADER},
+    )
+    with urllib.request.urlopen(request, timeout=15) as response:
+        datasource = json.loads(response.read().decode())
+
+    json_data = datasource.get("jsonData", {})
+    json_data["derivedFields"] = [
+        {
+            "datasourceUid": "tempo",
+            "matcherRegex": '"trace_id":"([0-9a-f]{32})"',
+            "name": "trace_id",
+            "url": "${__value.raw}",
+            "urlDisplayLabel": "Trace: ${__value.raw}",
+        }
+    ]
+    datasource["jsonData"] = json_data
+
+    payload = json.dumps(
+        {
+            "name": datasource["name"],
+            "type": datasource["type"],
+            "access": datasource["access"],
+            "url": datasource["url"],
+            "basicAuth": datasource.get("basicAuth", False),
+            "isDefault": datasource.get("isDefault", False),
+            "jsonData": datasource["jsonData"],
+        }
+    ).encode()
+
+    request = urllib.request.Request(
+        f"{GRAFANA_URL}/api/datasources/uid/loki",
+        data=payload,
+        headers={
+            "Authorization": AUTH_HEADER,
+            "Content-Type": "application/json",
+        },
+        method="PUT",
+    )
+    with urllib.request.urlopen(request, timeout=15) as response:
+        body = json.loads(response.read().decode())
+    print(f"Updated Loki datasource: {body['datasource']['uid']}")
+
+
 def main() -> None:
     wait_for_grafana()
     update_tempo_traces_to_logs()
+    update_loki_logs_to_traces()
     for path in sorted(Path("/dashboards").glob("*.json")):
         import_dashboard(path)
 
