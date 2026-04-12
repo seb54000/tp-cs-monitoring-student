@@ -1,16 +1,18 @@
 import json
+import os
 import time
 import urllib.error
 import urllib.request
 from pathlib import Path
 
 
-GRAFANA_URL = "http://lgtm:3000"
-AUTH_HEADER = "Basic YWRtaW46YWRtaW4="
+GRAFANA_URL = os.getenv("GRAFANA_URL", "http://lgtm:3000")
+AUTH_HEADER = os.getenv("GRAFANA_AUTH_HEADER", "Basic YWRtaW46YWRtaW4=")
 
 
 def wait_for_grafana(timeout_seconds: int = 120) -> None:
     deadline = time.time() + timeout_seconds
+    print(f"Checking Grafana health at {GRAFANA_URL}/api/health", flush=True)
     request = urllib.request.Request(
         f"{GRAFANA_URL}/api/health",
         headers={"Authorization": AUTH_HEADER},
@@ -19,15 +21,22 @@ def wait_for_grafana(timeout_seconds: int = 120) -> None:
         try:
             with urllib.request.urlopen(request, timeout=5) as response:
                 if response.status == 200:
+                    print("Grafana health endpoint is ready.", flush=True)
                     return
+                print(f"Grafana health returned unexpected HTTP {response.status}", flush=True)
+        except urllib.error.HTTPError as exc:
+            print(f"Grafana health HTTP error: {exc.code}", flush=True)
+        except urllib.error.URLError as exc:
+            print(f"Grafana health URL error: {exc.reason}", flush=True)
         except Exception:
-            pass
+            print("Grafana health request failed with unexpected error.", flush=True)
         time.sleep(2)
     raise RuntimeError("Grafana did not become ready in time")
 
 
 def wait_for_datasource(uid: str, timeout_seconds: int = 120) -> None:
     deadline = time.time() + timeout_seconds
+    print(f"Checking datasource {uid} at {GRAFANA_URL}/api/datasources/uid/{uid}", flush=True)
     request = urllib.request.Request(
         f"{GRAFANA_URL}/api/datasources/uid/{uid}",
         headers={"Authorization": AUTH_HEADER},
@@ -48,6 +57,7 @@ def wait_for_datasource(uid: str, timeout_seconds: int = 120) -> None:
 
 
 def import_dashboard(path: Path) -> None:
+    print(f"Importing dashboard from {path}", flush=True)
     payload = json.dumps(
         {
             "dashboard": json.loads(path.read_text()),
@@ -70,6 +80,7 @@ def import_dashboard(path: Path) -> None:
 
 
 def update_tempo_traces_to_logs() -> None:
+    print("Fetching Tempo datasource for traces/logs and traces/metrics configuration.", flush=True)
     request = urllib.request.Request(
         f"{GRAFANA_URL}/api/datasources/uid/tempo",
         headers={"Authorization": AUTH_HEADER},
@@ -139,6 +150,7 @@ def update_tempo_traces_to_logs() -> None:
 
 
 def update_loki_logs_to_traces() -> None:
+    print("Fetching Loki datasource for logs-to-traces configuration.", flush=True)
     request = urllib.request.Request(
         f"{GRAFANA_URL}/api/datasources/uid/loki",
         headers={"Authorization": AUTH_HEADER},
@@ -185,7 +197,7 @@ def update_loki_logs_to_traces() -> None:
 
 
 def main() -> None:
-    print("Waiting for Grafana...", flush=True)
+    print(f"Waiting for Grafana at {GRAFANA_URL}...", flush=True)
     wait_for_grafana()
     wait_for_datasource("tempo")
     wait_for_datasource("loki")
