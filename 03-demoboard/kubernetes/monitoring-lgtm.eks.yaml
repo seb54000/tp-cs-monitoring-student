@@ -533,7 +533,7 @@ metadata:
   name: lgtm-pvc
   namespace: vm00
 spec:
-  storageClassName: gp3
+  storageClassName: gp2
   accessModes: ["ReadWriteOnce"]
   resources:
     requests:

@@ -242,7 +242,7 @@ metadata:
   name: prometheus-pvc
   namespace: vm00
 spec:
-  storageClassName: gp3
+  storageClassName: gp2
   accessModes: ["ReadWriteOnce"]
   resources:
     requests:
@@ -254,7 +254,7 @@ metadata:
   name: grafana-pvc
   namespace: vm00
 spec:
-  storageClassName: gp3
+  storageClassName: gp2
   accessModes: ["ReadWriteOnce"]
   resources:
     requests:
@@ -266,7 +266,7 @@ metadata:
   name: opensearch-pvc
   namespace: vm00
 spec:
-  storageClassName: gp3
+  storageClassName: gp2
   accessModes: ["ReadWriteOnce"]
   resources:
     requests:
