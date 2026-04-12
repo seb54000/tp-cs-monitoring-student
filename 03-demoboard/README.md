@@ -104,3 +104,7 @@ Les exporters `postgres` et `redis` de la variante classique ciblent les service
 
 - `postgres.vmXX.svc.cluster.local:5432`
 - `redis.vmXX.svc.cluster.local:6379`
+
+## Changelog
+
+- 2026-04-12 : `load_test.py` accepte désormais une URL API en argument positionnel, en plus de `DEMOBOARD_API_URL`, ce qui permet de générer du trafic directement vers un déploiement Demoboard sur EKS avec `python3 load_test.py https://.../api`.

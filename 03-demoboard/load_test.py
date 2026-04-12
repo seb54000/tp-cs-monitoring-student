@@ -9,7 +9,7 @@ import urllib.error
 import urllib.request
 
 
-API_BASE_URL = os.getenv("DEMOBOARD_API_URL", "http://localhost:8000").rstrip("/")
+DEFAULT_API_BASE_URL = os.getenv("DEMOBOARD_API_URL", "http://localhost:8000").rstrip("/")
 MIN_DELAY_SECONDS = 1
 MAX_DELAY_SECONDS = 3
 START_JOB_PROBABILITY = 0.4
@@ -39,7 +39,7 @@ NOUNS = [
 ]
 
 
-def _request(path: str, method: str = "GET", payload: dict | None = None) -> tuple[int, dict | str]:
+def _request(api_base_url: str, path: str, method: str = "GET", payload: dict | None = None) -> tuple[int, dict | str]:
     body = None
     headers = {}
     if payload is not None:
@@ -47,7 +47,7 @@ def _request(path: str, method: str = "GET", payload: dict | None = None) -> tup
         headers["Content-Type"] = "application/json"
 
     request = urllib.request.Request(
-        f"{API_BASE_URL}{path}",
+        f"{api_base_url}{path}",
         data=body,
         headers=headers,
         method=method,
@@ -68,16 +68,16 @@ def _random_title() -> str:
     return f"{random.choice(ADJECTIVES)}-{random.choice(NOUNS)}-{random.randint(1000, 9999)}"
 
 
-def _list_tasks() -> list[dict]:
-    status, payload = _request("/tasks")
+def _list_tasks(api_base_url: str) -> list[dict]:
+    status, payload = _request(api_base_url, "/tasks")
     if status != 200 or not isinstance(payload, list):
         print(f"[ERROR] task listing failed ({status}): {payload}")
         return []
     return payload
 
 
-def _prune_tasks() -> None:
-    tasks = _list_tasks()
+def _prune_tasks(api_base_url: str) -> None:
+    tasks = _list_tasks(api_base_url)
     if len(tasks) <= MAX_TASK_COUNT:
         return
 
@@ -94,7 +94,7 @@ def _prune_tasks() -> None:
     deleted_count = 0
     for task in deletable_tasks[:excess_count]:
         task_id = task["id"]
-        status, payload = _request(f"/tasks/{task_id}", method="DELETE")
+        status, payload = _request(api_base_url, f"/tasks/{task_id}", method="DELETE")
         if status == 204:
             deleted_count += 1
             print(f"[PRUNE] task_id={task_id}")
@@ -105,14 +105,21 @@ def _prune_tasks() -> None:
         print(f"[PRUNE] deleted={deleted_count} remaining_target={MAX_TASK_COUNT}")
 
 
+def _resolve_api_base_url() -> str:
+    if len(sys.argv) > 1 and sys.argv[1]:
+        return sys.argv[1].rstrip("/")
+    return DEFAULT_API_BASE_URL
+
+
 def main() -> int:
-    print(f"Starting Demoboard load test against {API_BASE_URL}")
+    api_base_url = _resolve_api_base_url()
+    print(f"Starting Demoboard load test against {api_base_url}")
     print("Press Ctrl+C to stop.")
 
     try:
         while True:
             title = _random_title()
-            status, payload = _request("/tasks", method="POST", payload={"title": title})
+            status, payload = _request(api_base_url, "/tasks", method="POST", payload={"title": title})
             if status != 201:
                 print(f"[ERROR] task creation failed ({status}): {payload}")
             else:
@@ -120,14 +127,14 @@ def main() -> int:
                 print(f"[CREATE] task_id={task_id} title={title}")
 
                 if random.random() < START_JOB_PROBABILITY:
-                    job_status, job_payload = _request(f"/tasks/{task_id}/start-job", method="POST")
+                    job_status, job_payload = _request(api_base_url, f"/tasks/{task_id}/start-job", method="POST")
                     if job_status == 200:
                         print(f"[START] task_id={task_id}")
                     else:
                         print(f"[ERROR] start-job failed for task_id={task_id} ({job_status}): {job_payload}")
 
                 if random.random() < PRUNE_PROBABILITY:
-                    _prune_tasks()
+                    _prune_tasks(api_base_url)
 
             sleep_for = random.uniform(MIN_DELAY_SECONDS, MAX_DELAY_SECONDS)
             time.sleep(sleep_for)
