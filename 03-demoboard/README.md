@@ -27,6 +27,8 @@ docker compose up --build -d
 ```bash
 cd tp-cs-monitoring-student/03-demoboard
 python3 load_test.py
+# ou profil haute cadence pour la v2 scalée
+python3 load_test.py --burst
 ```
 
 ## Interfaces
@@ -49,6 +51,7 @@ Identifiants OpenSearch/OpenSearch Dashboards :
 - PostgreSQL et Redis ne sont pas modifiés : leurs métriques sont exposées par `postgres-exporter` et `redis-exporter`.
 - Grafana expose les datasources `Prometheus`, `Jaeger` et `OpenSearch`.
 - `load_test.py` simule les actions du frontend en appelant directement l'API Demoboard : création de tâches aléatoires toutes les 1 à 3 secondes, déclenchement aléatoire de certains traitements, et suppression ponctuelle de tâches existantes pour éviter une croissance infinie.
+- `load_test.py --burst` utilise un profil plus agressif pour la version scalée `v2` : cadence de `200 ms`, environ `80%` des tâches démarrent immédiatement, et la purge intervient moins souvent pour conserver davantage d'historique.
 
 ## Variante LGTM
 
@@ -64,6 +67,7 @@ Une variante de test basée sur `grafana/otel-lgtm` est disponible dans `docker-
 ```bash
 docker compose -f docker-compose.lgtm.yaml up -d
 python3 load_test.py
+python3 load_test.py --burst
 ```
 
 ## Déploiement Kubernetes EKS
@@ -108,3 +112,4 @@ Les exporters `postgres` et `redis` de la variante classique ciblent les service
 ## Changelog
 
 - 2026-04-12 : `load_test.py` accepte désormais une URL API en argument positionnel, en plus de `DEMOBOARD_API_URL`, ce qui permet de générer du trafic directement vers un déploiement Demoboard sur EKS avec `python3 load_test.py https://.../api`.
+- 2026-04-12 : `load_test.py --burst` ajoute un profil haute cadence pour la version scalée `v2` avec `200 ms` entre actions, environ `80%` de démarrage immédiat des traitements, et une purge moins fréquente.
