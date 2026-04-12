@@ -26,6 +26,27 @@ def wait_for_grafana(timeout_seconds: int = 120) -> None:
     raise RuntimeError("Grafana did not become ready in time")
 
 
+def wait_for_datasource(uid: str, timeout_seconds: int = 120) -> None:
+    deadline = time.time() + timeout_seconds
+    request = urllib.request.Request(
+        f"{GRAFANA_URL}/api/datasources/uid/{uid}",
+        headers={"Authorization": AUTH_HEADER},
+    )
+    while time.time() < deadline:
+        try:
+            with urllib.request.urlopen(request, timeout=5) as response:
+                if response.status == 200:
+                    print(f"Datasource ready: {uid}", flush=True)
+                    return
+        except urllib.error.HTTPError as exc:
+            if exc.code != 404:
+                print(f"Datasource {uid} not ready yet: HTTP {exc.code}", flush=True)
+        except Exception as exc:
+            print(f"Datasource {uid} not ready yet: {exc}", flush=True)
+        time.sleep(2)
+    raise RuntimeError(f"Datasource {uid} did not become ready in time")
+
+
 def import_dashboard(path: Path) -> None:
     payload = json.dumps(
         {
@@ -164,11 +185,18 @@ def update_loki_logs_to_traces() -> None:
 
 
 def main() -> None:
+    print("Waiting for Grafana...", flush=True)
     wait_for_grafana()
+    wait_for_datasource("tempo")
+    wait_for_datasource("loki")
+    wait_for_datasource("prometheus")
+    print("Updating datasources...", flush=True)
     update_tempo_traces_to_logs()
     update_loki_logs_to_traces()
+    print("Importing dashboards...", flush=True)
     for path in sorted(Path("/dashboards").glob("*.json")):
         import_dashboard(path)
+    print("Grafana bootstrap completed.", flush=True)
 
 
 if __name__ == "__main__":
