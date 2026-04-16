@@ -1,0 +1,154 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="980" viewBox="0 0 1600 980" role="img" aria-labelledby="title desc">
+  <title id="title">Demoboard and LGTM on EKS</title>
+  <desc id="desc">Overview of the tpmon EKS deployment: student VM helper script, ECR image push, Demoboard services, LGTM stack and telemetry flows.</desc>
+  <defs>
+    <style>
+      .bg { fill: #f6f3ee; }
+      .panel { fill: #fffdfa; stroke: #2d2a26; stroke-width: 2; rx: 18; ry: 18; }
+      .sub { fill: #f4ede1; stroke: #7a5c2e; stroke-width: 2; rx: 14; ry: 14; }
+      .node { fill: #eef5f3; stroke: #255b57; stroke-width: 2; rx: 14; ry: 14; }
+      .stack { fill: #eef0fb; stroke: #3949ab; stroke-width: 2; rx: 14; ry: 14; }
+      .data { fill: #f7efe8; stroke: #9b5d2e; stroke-width: 2; rx: 14; ry: 14; }
+      .note { fill: #fff7d9; stroke: #9f7c18; stroke-width: 2; rx: 12; ry: 12; }
+      .title { font: 700 30px "Segoe UI", sans-serif; fill: #201d1a; }
+      .h1 { font: 700 24px "Segoe UI", sans-serif; fill: #201d1a; }
+      .h2 { font: 700 19px "Segoe UI", sans-serif; fill: #201d1a; }
+      .txt { font: 16px "Segoe UI", sans-serif; fill: #26221e; }
+      .small { font: 14px "Segoe UI", sans-serif; fill: #3a342e; }
+      .arrow { stroke: #2d2a26; stroke-width: 2.5; fill: none; marker-end: url(#arrow); }
+      .dash { stroke: #2d2a26; stroke-width: 2.5; fill: none; stroke-dasharray: 9 7; marker-end: url(#arrow); }
+      .telemetry { stroke: #3949ab; stroke-width: 3; fill: none; marker-end: url(#arrowBlue); }
+      .logs { stroke: #9b5d2e; stroke-width: 3; fill: none; marker-end: url(#arrowOrange); }
+      .user { fill: #dff1e8; stroke: #1f6d4f; stroke-width: 2; rx: 14; ry: 14; }
+    </style>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12 z" fill="#2d2a26"/>
+    </marker>
+    <marker id="arrowBlue" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12 z" fill="#3949ab"/>
+    </marker>
+    <marker id="arrowOrange" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12 z" fill="#9b5d2e"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1600" height="980"/>
+  <text class="title" x="44" y="54">TP Monitoring on EKS: what the helper deploys and how components interact</text>
+
+  <rect class="panel" x="36" y="92" width="320" height="278"/>
+  <text class="h1" x="58" y="128">Student VM</text>
+  <rect class="sub" x="58" y="150" width="276" height="112"/>
+  <text class="h2" x="78" y="182">tpmon_eks_demoboard_monitoring_lgtm.sh</text>
+  <text class="txt" x="78" y="212">1. Build Demoboard images</text>
+  <text class="txt" x="78" y="236">2. Push images to ECR</text>
+  <text class="txt" x="78" y="260">3. Apply LGTM and Demoboard manifests</text>
+  <rect class="sub" x="58" y="282" width="276" height="66"/>
+  <text class="txt" x="78" y="312">refresh_grafana_lgtm.sh</text>
+  <text class="small" x="78" y="336">Replays ConfigMaps + bootstrap Job only</text>
+
+  <rect class="panel" x="402" y="92" width="1160" height="828"/>
+  <text class="h1" x="426" y="128">EKS cluster</text>
+
+  <rect class="panel" x="430" y="150" width="1098" height="104"/>
+  <text class="h2" x="454" y="184">Ingress / external URLs</text>
+  <rect class="user" x="454" y="198" width="280" height="36"/>
+  <text class="txt" x="470" y="221">demoboard-vmXX.eksYY.&lt;dns_subdomain&gt;</text>
+  <rect class="user" x="756" y="198" width="248" height="36"/>
+  <text class="txt" x="772" y="221">grafana-vmXX.eksYY....</text>
+  <rect class="user" x="1022" y="198" width="282" height="36"/>
+  <text class="txt" x="1038" y="221">prometheus-vmXX.eksYY....</text>
+
+  <rect class="stack" x="454" y="286" width="486" height="588"/>
+  <text class="h1" x="478" y="322">Namespace vmXX: monitoring LGTM</text>
+  <rect class="stack" x="482" y="346" width="430" height="250"/>
+  <text class="h2" x="504" y="380">Deployment lgtm (1 pod)</text>
+  <text class="txt" x="504" y="412">Single pod from grafana/otel-lgtm:</text>
+  <text class="txt" x="524" y="442">• Grafana</text>
+  <text class="txt" x="524" y="470">• Prometheus</text>
+  <text class="txt" x="524" y="498">• Loki</text>
+  <text class="txt" x="524" y="526">• Tempo</text>
+  <text class="txt" x="524" y="554">• OTEL Collector</text>
+  <text class="txt" x="524" y="582">• Pyroscope</text>
+
+  <rect class="sub" x="482" y="624" width="430" height="88"/>
+  <text class="h2" x="504" y="656">DaemonSet promtail</text>
+  <text class="txt" x="504" y="686">Reads Kubernetes container logs on nodes</text>
+  <text class="small" x="504" y="706">Adds labels: namespace, pod, node_name, service_name, container</text>
+
+  <rect class="sub" x="482" y="738" width="430" height="108"/>
+  <text class="h2" x="504" y="770">Bootstrap Job</text>
+  <text class="txt" x="504" y="800">Imports the dashboard and patches Grafana datasources</text>
+  <text class="small" x="504" y="824">Source of truth: import_grafana_dashboard.py + demoboard-lgtm-overview.json</text>
+
+  <rect class="node" x="972" y="286" width="528" height="588"/>
+  <text class="h1" x="996" y="322">Namespace vmXX: Demoboard</text>
+
+  <rect class="node" x="996" y="350" width="160" height="96"/>
+  <text class="h2" x="1020" y="382">frontend</text>
+  <text class="txt" x="1020" y="412">v1: 1 replica</text>
+  <text class="txt" x="1020" y="436">v2: 3 replicas</text>
+
+  <rect class="node" x="1180" y="350" width="160" height="96"/>
+  <text class="h2" x="1208" y="382">api</text>
+  <text class="txt" x="1204" y="412">v1: 1 replica</text>
+  <text class="txt" x="1204" y="436">v2: 3 replicas</text>
+
+  <rect class="node" x="1364" y="350" width="112" height="96"/>
+  <text class="h2" x="1384" y="382">worker</text>
+  <text class="txt" x="1380" y="412">v1: 1</text>
+  <text class="txt" x="1380" y="436">v2: 6</text>
+
+  <rect class="data" x="1056" y="520" width="200" height="106"/>
+  <text class="h2" x="1096" y="556">PostgreSQL</text>
+  <text class="txt" x="1082" y="586">1 replica + PVC</text>
+  <text class="small" x="1074" y="610">State of tasks</text>
+
+  <rect class="data" x="1290" y="520" width="150" height="106"/>
+  <text class="h2" x="1330" y="556">Redis</text>
+  <text class="txt" x="1312" y="586">1 replica</text>
+  <text class="small" x="1310" y="610">Job queue</text>
+
+  <rect class="note" x="996" y="672" width="480" height="154"/>
+  <text class="h2" x="1018" y="704">Pedagogical behaviour in v2</text>
+  <text class="txt" x="1018" y="736">• topology spread constraints across zones / nodes</text>
+  <text class="txt" x="1018" y="764">• NODE_ZONE is discovered from the Kubernetes node label</text>
+  <text class="txt" x="1018" y="792">• degraded mode can target one AZ, increasing worker latency</text>
+  <text class="small" x="1018" y="818">frontend → api; api/worker export OTLP telemetry to otel-collector</text>
+
+  <path class="arrow" d="M1156 398 L1180 398"/>
+  <path class="arrow" d="M1340 398 L1364 398"/>
+  <path class="arrow" d="M1258 573 L1290 573"/>
+  <path class="arrow" d="M1260 546 C1290 520,1320 486,1396 446"/>
+  <path class="arrow" d="M1230 446 C1210 474,1186 492,1160 520"/>
+
+  <path class="telemetry" d="M1260 382 C980 360,870 420,760 470"/>
+  <path class="telemetry" d="M1420 382 C1110 370,930 480,760 470"/>
+  <text class="small" x="818" y="430" fill="#3949ab">OTLP traces + metrics + app logs</text>
+
+  <path class="logs" d="M698 712 C830 730,980 760,1088 760"/>
+  <text class="small" x="520" y="728" fill="#9b5d2e">promtail pushes Kubernetes container logs to Loki</text>
+
+  <path class="arrow" d="M734 216 C820 216,870 216,996 398"/>
+  <path class="arrow" d="M884 216 C884 250,786 290,700 346"/>
+  <text class="small" x="820" y="246">Ingress routes</text>
+
+  <rect class="sub" x="36" y="404" width="320" height="142"/>
+  <text class="h2" x="58" y="440">AWS ECR</text>
+  <text class="txt" x="58" y="472">api-v1</text>
+  <text class="txt" x="58" y="500">worker-v1</text>
+  <text class="txt" x="58" y="528">front-v2</text>
+
+  <path class="arrow" d="M334 210 C390 210,382 210,430 210"/>
+  <path class="arrow" d="M334 474 C420 474,520 474,996 398"/>
+  <text class="small" x="348" y="454">push images</text>
+
+  <rect class="note" x="36" y="586" width="320" height="252"/>
+  <text class="h2" x="58" y="622">What the helper really does</text>
+  <text class="txt" x="58" y="656">• builds and pushes Demoboard images to ECR</text>
+  <text class="txt" x="58" y="686">• renders manifests for vmXX / eksYY / DNS</text>
+  <text class="txt" x="58" y="716">• deploys LGTM stack first</text>
+  <text class="txt" x="58" y="746">• refreshes Grafana dashboard/bootstrap</text>
+  <text class="txt" x="58" y="776">• deploys Demoboard v1</text>
+  <text class="txt" x="58" y="806">• later suggests Demoboard v2 + burst load test</text>
+  <text class="small" x="58" y="832">This is the end-to-end view the students use during tpmon.</text>
+</svg>

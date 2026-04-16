@@ -89,6 +89,8 @@ Caractéristiques :
 - les ingress utilisent par défaut le wildcard TLS EKS sous la forme `service-vmXX.eksYY.<dns_subdomain>` avec le secret `tls-certificate`
 - les PVC supposent une `StorageClass` par défaut dans EKS
 - un mémo de commandes est généré sur chaque VM étudiante dans `~/tpmon_eks_demoboard_monitoring_lgtm.txt`
+- un schéma de synthèse du déploiement LGTM + Demoboard sur EKS est disponible en SVG dans [`demoboard-lgtm-eks-architecture.excalidraw.svg`](./demoboard-lgtm-eks-architecture.excalidraw.svg) et en version éditable Excalidraw dans [`demoboard-lgtm-eks-architecture.excalidraw`](./demoboard-lgtm-eks-architecture.excalidraw)
+- un diagramme de séquence de la cinématique applicative `create -> start-job -> worker -> completed -> delete` est disponible en Mermaid dans [`demoboard-request-lifecycle.mmd`](./demoboard-request-lifecycle.mmd) et en version éditable Excalidraw dans [`demoboard-request-lifecycle.excalidraw`](./demoboard-request-lifecycle.excalidraw)
 
 Exemple :
 
