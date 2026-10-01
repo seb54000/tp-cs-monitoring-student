@@ -113,7 +113,7 @@ spec:
     spec:
       containers:
         - name: lgtm
-          image: grafana/otel-lgtm:latest
+          image: docker.io/grafana/otel-lgtm@sha256:b966ea107831d526d9eb8fe4d2d86c9e5731392fad9dce8296bcf2072031f07c
           ports:
             - containerPort: 3000
             - containerPort: 3100
@@ -208,7 +208,7 @@ spec:
       serviceAccountName: promtail
       containers:
         - name: promtail
-          image: grafana/promtail:3.6.1
+          image: docker.io/grafana/promtail@sha256:a664933980b493236f4f682a90f5e02b2b3e8fd56ca95c8dc1aeb3be1ff55f9b
           args:
             - -config.file=/etc/promtail/config.yml
           volumeMounts:

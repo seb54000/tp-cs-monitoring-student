@@ -5,7 +5,7 @@ volumes:
 
 services:
   lgtm:
-    image: grafana/otel-lgtm:latest
+    image: docker.io/grafana/otel-lgtm@sha256:b966ea107831d526d9eb8fe4d2d86c9e5731392fad9dce8296bcf2072031f07c
     ports:
       - "3000:3000"
       - "4317:4317"
@@ -15,7 +15,7 @@ services:
       - lgtm-data:/data
 
   promtail:
-    image: grafana/promtail:3.6.1
+    image: docker.io/grafana/promtail@sha256:a664933980b493236f4f682a90f5e02b2b3e8fd56ca95c8dc1aeb3be1ff55f9b
     command:
       - -config.file=/etc/promtail/config.yml
     volumes:
@@ -23,7 +23,7 @@ services:
       - /home/seb/tpcs-demoboard/observability-logs:/var/log/demoboard:ro
 
   grafana-bootstrap:
-    image: python:3.12-alpine
+    image: docker.io/library/python@sha256:4c47124a8391cb7a9f571164147d154777cf012a4ece5f86097130d7a4478111
     depends_on:
       - lgtm
     command:
