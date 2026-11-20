@@ -337,6 +337,8 @@ metadata:
   namespace: vm00
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: prometheus
@@ -345,6 +347,9 @@ spec:
       labels:
         app: prometheus
     spec:
+      securityContext:
+        fsGroup: 65534
+        fsGroupChangePolicy: OnRootMismatch
       containers:
         - name: prometheus
           image: prom/prometheus:v3.1.0
@@ -387,6 +392,8 @@ metadata:
   namespace: vm00
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: grafana
@@ -395,6 +402,9 @@ spec:
       labels:
         app: grafana
     spec:
+      securityContext:
+        fsGroup: 472
+        fsGroupChangePolicy: OnRootMismatch
       containers:
         - name: grafana
           image: grafana/grafana:11.5.2

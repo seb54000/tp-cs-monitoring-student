@@ -103,6 +103,8 @@ metadata:
   namespace: vm00
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: lgtm
@@ -111,9 +113,23 @@ spec:
       labels:
         app: lgtm
     spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels:
+                    app: lgtm
+                namespaceSelector: {}
       containers:
         - name: lgtm
           image: docker.io/grafana/otel-lgtm@sha256:b966ea107831d526d9eb8fe4d2d86c9e5731392fad9dce8296bcf2072031f07c
+          resources:
+            requests:
+              cpu: 250m
+              memory: 1280Mi
           ports:
             - containerPort: 3000
             - containerPort: 3100
