@@ -1,9 +1,10 @@
 # tp-cs-monitoring-student
 
-## Labs
+## Parcours du TP
 
-- `01-prometheus` : prise en main Prometheus
-- `02-GoldenSignals` : métriques, dashboards et alerting
-- `02-openSearch` : collecte et recherche de logs
-- `03-jaeger` : traces distribuées
-- `04-demoboard-observability` : stack complète pour `/home/seb/tpcs-demoboard`
+Le TP se déroule en trois parties, dans cet ordre :
+
+1. `01-prometheus` : prise en main de Prometheus, exploration des métriques système exposées par Node Exporter et premières requêtes PromQL.
+2. `02-GoldenSignals` : étude des quatre Golden Signals avec Prometheus et Grafana, puis dashboards, SLO/SLA et alerting.
+3. `03-demoboard` : observabilité de Demoboard instrumenté avec OpenTelemetry, autour des métriques, logs et traces, de leur corrélation, puis de la charge et du passage à l’échelle sur EKS.
+
